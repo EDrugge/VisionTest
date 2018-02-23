@@ -5,7 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VisionTest"
         mc:Ignorable="d"
-        Title="Result" Height="300" Width="300" WindowState="Maximized">
+        Title="Result" Height="300" Width="300" 
+        WindowState="Maximized"
+        WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"></RowDefinition>

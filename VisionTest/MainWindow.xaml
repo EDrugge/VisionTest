@@ -4,101 +4,114 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VisionTest"
-        xmlns:webcamControl="clr-namespace:WebcamControl;assembly=WebcamControl"
         xmlns:qc="http://QuickConverter.CodePlex.com/"
         mc:Ignorable="d"
         Title="Microsoft Cognitive Services" Height="700" Width="700"
-        WindowStartupLocation="CenterScreen" d:DataContext="{d:DesignData MainWindow}">
+        WindowStartupLocation="CenterScreen" d:DataContext="{d:DesignInstance local:MainWindow}"
+        Closing="MainWindow_OnClosing">
+    <Window.Resources>
+        <DataTemplate DataType="{x:Type local:SpeechRecognitionViewModel}">
+            <local:SpeechRecognitionView />
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <TabControl>
+            <TabItem Header="Vision">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-        <Border BorderThickness="1" BorderBrush="Black">
-            <webcamControl:Webcam x:Name="WebcamViewer"
-                                  Width="640"
-                                  Height="480"
-                                  Margin="10"
-                                  FrameRate="30"
-                              
-                                  ImageDirectory="{Binding FilePath}"
-                                  VideoDirectory="{Binding FilePath}"
-                                  VideoDevice="{Binding VideoDevice}"
-                                  AudioDevice="{Binding AudioDevice}"/>
-        </Border>
-        
+                    <Image x:Name="WebCameraImage"></Image>
+                    
+                    <Separator Grid.Row="1" />
 
-        <Grid Grid.Row="1" HorizontalAlignment="Center" Margin="0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
-                <ColumnDefinition/>
-            </Grid.ColumnDefinitions>
-            <Button Content="Start Camera" 
-                    Height="24" Width="112" HorizontalAlignment="Right" Margin="0,0,10,0"
-                    Click="StartCaptureButton_Click"
-                    IsEnabled="{qc:Binding '!$P', P={Binding IsCameraRunning}}"/>
+                    <Grid Grid.Row="2" HorizontalAlignment="Center" Margin="0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition />
+                        </Grid.ColumnDefinitions>
+                        <Button Content="Start Camera"
+                                Height="24" Width="112" HorizontalAlignment="Right" Margin="0,0,10,0"
+                                Click="StartCaptureButton_Click"
+                                IsEnabled="{qc:Binding '!$P', P={Binding IsCameraRunning}}" />
 
-            <Button Grid.Row="0" Grid.Column="1" Content="Stop Camera"
-                    Height="24" Width="112" HorizontalAlignment="Left" 
-                    Click="StopCaptureButton_Click"
-                    IsEnabled="{Binding IsCameraRunning}" />
-        </Grid>
+                        <Button Grid.Row="0" Grid.Column="1" Content="Stop Camera"
+                                Height="24" Width="112" HorizontalAlignment="Left"
+                                Click="StopCaptureButton_Click"
+                                IsEnabled="{Binding IsCameraRunning}" />
+                    </Grid>
 
-        <Grid Grid.Row="2" VerticalAlignment="Bottom">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            
-            <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">Vision API</TextBlock>
-            <Button Grid.Row="0" Grid.Column="1" Content="Snapshot"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="VisionSnapshotButton_Click"
-                    IsEnabled="{Binding Path=IsCameraRunning}"/>
-            <Button Grid.Row="0" Grid.Column="2" Content="Browse"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="VisionBrowseButton_Click"/>
-            <TextBox Grid.Row="0" Grid.Column="3" VerticalAlignment="Center" Text="{Binding ImageUrl}"></TextBox>
-            <Button Grid.Row="0" Grid.Column="4" Content="Use URL"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="VisionUrlButton_Click"/>
+                    <Grid Grid.Row="3" VerticalAlignment="Bottom">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Row="1" Grid.Column="0"
-                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">Face API</TextBlock>
-            <Button Grid.Row="1" Grid.Column="1" Content="Snapshot"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="FaceApiButton_Click"
-                    IsEnabled="{Binding Path=IsCameraRunning}"/>
-            <Button Grid.Row="1" Grid.Column="2" Content="Browse"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="FaceBrowseButton_Click"/>
+                        <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">Vision API</TextBlock>
+                        <Button Grid.Row="0" Grid.Column="1" Content="Snapshot"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="VisionSnapshotButton_Click"
+                                IsEnabled="{Binding Path=IsCameraRunning}" />
+                        <Button Grid.Row="0" Grid.Column="2" Content="Browse"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="VisionBrowseButton_Click" />
+                        <TextBox Grid.Row="0" Grid.Column="3" VerticalAlignment="Center" Text="{Binding ImageUrl}" />
+                        <Button Grid.Row="0" Grid.Column="4" Content="Use URL"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="VisionUrlButton_Click" />
 
-            <TextBlock Grid.Row="2" Grid.Column="0"
-                       HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">Emotion API</TextBlock>
-            <Button Grid.Row="2" Grid.Column="1" Content="Snapshot"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="EmotionApiButton_Click"
-                    IsEnabled="{Binding Path=IsCameraRunning}"/>
-            <Button Grid.Row="2" Grid.Column="2" Content="Browse"
-                    Margin="5"
-                    Height="24" Width="80" HorizontalAlignment="Center"
-                    Click="EmotionBrowseButton_Click"/>
-        </Grid>
+                        <TextBlock Grid.Row="1" Grid.Column="0"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                            Face API
+                        </TextBlock>
+                        <Button Grid.Row="1" Grid.Column="1" Content="Snapshot"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="FaceApiButton_Click"
+                                IsEnabled="{Binding Path=IsCameraRunning}" />
+                        <Button Grid.Row="1" Grid.Column="2" Content="Browse"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="FaceBrowseButton_Click" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,10,0">
+                            Emotion API
+                        </TextBlock>
+                        <Button Grid.Row="2" Grid.Column="1" Content="Snapshot"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="EmotionApiButton_Click"
+                                IsEnabled="{Binding Path=IsCameraRunning}" />
+                        <Button Grid.Row="2" Grid.Column="2" Content="Browse"
+                                Margin="5"
+                                Height="24" Width="80" HorizontalAlignment="Center"
+                                Click="EmotionBrowseButton_Click" />
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Speech Recognition">
+                <ContentControl Content="{Binding SpeechRecognitionViewModel}" />
+            </TabItem>
+        </TabControl>
+
+
     </Grid>
+
 </Window>

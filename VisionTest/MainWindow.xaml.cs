@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
-using Microsoft.Expression.Encoder.Devices;
 using Microsoft.ProjectOxford.Emotion;
 using Microsoft.ProjectOxford.Face;
 using Microsoft.ProjectOxford.Vision;
@@ -21,24 +20,58 @@ namespace VisionTest
 	{
 		private bool _isCameraRunning;
 		private string _imageUrl;
-		public Collection<EncoderDevice> VideoDevices { get; set; }
-		public EncoderDevice VideoDevice { get; set; }
-		public Collection<EncoderDevice> AudioDevices { get; set; }
-		public EncoderDevice AudioDevice { get; set; }
-		public string FilePath => "C:\\WebcamSnapshots";
+		private readonly WebCam _webCamera;
+		public string FilePath { get; set; }
 
 		public MainWindow()
 		{
 			InitializeComponent();
 
-			this.DataContext = this;
+			if (ApiKeysIncorrect())
+			{
+				MessageBox.Show(
+					"You seem to be missing an API-key. Check your API-key settings in App.config...",
+					"API-keys",
+					MessageBoxButton.OK,
+					MessageBoxImage.Error);
+				Application.Current.Shutdown();
+			}
 
-			VideoDevices = EncoderDevices.FindDevices(EncoderDeviceType.Video);
-			VideoDevice = EncoderDevices.FindDevices(EncoderDeviceType.Video).Single(x => x.Name.Contains("Integrated"));
+			SetupWebcamImageDirectory();
 
-			AudioDevices = EncoderDevices.FindDevices(EncoderDeviceType.Audio);
-			AudioDevice = EncoderDevices.FindDevices(EncoderDeviceType.Audio).Single(x => x.Name.Contains("Intern"));
+			SpeechRecognitionViewModel = new SpeechRecognitionViewModel();
+			
+			_webCamera = new WebCam();
+			_webCamera.InitializeWebCam(ref WebCameraImage);
+
+			DataContext = this;
 		}
+
+		private static bool ApiKeysIncorrect()
+		{
+			return
+				string.IsNullOrEmpty(ConfigurationManager.AppSettings.Get("VisionApiKey"))
+				|| string.IsNullOrEmpty(ConfigurationManager.AppSettings.Get("EmotionApiKey"))
+				|| string.IsNullOrEmpty(ConfigurationManager.AppSettings.Get("FaceApiKey"))
+				|| string.IsNullOrEmpty(ConfigurationManager.AppSettings.Get("SpeechRecognitionApiKey"));
+
+		}
+
+		private void SetupWebcamImageDirectory()
+		{
+			var directory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? @"C:\";
+
+			FilePath = Path.Combine(
+				directory,
+				"WebCameraImages");
+
+			if (!Directory.Exists(FilePath))
+			{
+				Directory.CreateDirectory(FilePath);
+			}
+		}
+
+		public SpeechRecognitionViewModel SpeechRecognitionViewModel { get; set; }
 
 		public bool IsCameraRunning
 		{
@@ -64,22 +97,17 @@ namespace VisionTest
 
 		private void StartCaptureButton_Click(object sender, RoutedEventArgs e)
 		{
-			try
-			{
-				// Display webcam video
-				WebcamViewer.StartPreview();
-				IsCameraRunning = true;
-			}
-			catch (Microsoft.Expression.Encoder.SystemErrorException ex)
-			{
-				MessageBox.Show("Device is in use by another application");
-			}
+			_webCamera.Start();
+
+			IsCameraRunning = true;
 		}
 
 		private void StopCaptureButton_Click(object sender, RoutedEventArgs e)
 		{
-			// Stop the display of webcam video.
-			WebcamViewer.StopPreview();
+			_webCamera.Stop();
+
+			WebCameraImage.Source = null;
+
 			IsCameraRunning = false;
 		}
 
@@ -97,6 +125,7 @@ namespace VisionTest
 			{
 				return;
 			}
+
 			var filePath = openFileDialog.FileName;
 
 			GetVisionResultForImage(filePath);
@@ -108,7 +137,11 @@ namespace VisionTest
 
 			var visionServiceClient = CreateVisionServiceClient();
 
-			var visualFeatures = new[] { VisualFeature.Adult, VisualFeature.Categories, VisualFeature.Color, VisualFeature.Description, VisualFeature.Faces, VisualFeature.ImageType, VisualFeature.Tags };
+			var visualFeatures = new[]
+			{
+				VisualFeature.Adult, VisualFeature.Categories, VisualFeature.Color, VisualFeature.Description, VisualFeature.Faces,
+				VisualFeature.ImageType, VisualFeature.Tags
+			};
 
 			var result = await visionServiceClient.AnalyzeImageAsync(fileStream, visualFeatures);
 
@@ -126,7 +159,11 @@ namespace VisionTest
 
 			var visionServiceClient = CreateVisionServiceClient();
 
-			var visualFeatures = new[] { VisualFeature.Adult, VisualFeature.Categories, VisualFeature.Color, VisualFeature.Description, VisualFeature.Faces, VisualFeature.ImageType, VisualFeature.Tags };
+			var visualFeatures = new[]
+			{
+				VisualFeature.Adult, VisualFeature.Categories, VisualFeature.Color, VisualFeature.Description, VisualFeature.Faces,
+				VisualFeature.ImageType, VisualFeature.Tags
+			};
 
 			var result = await visionServiceClient.AnalyzeImageAsync(ImageUrl, visualFeatures);
 
@@ -135,21 +172,21 @@ namespace VisionTest
 
 		private static VisionServiceClient CreateVisionServiceClient()
 		{
-			var endPoint = "https://westeurope.api.cognitive.microsoft.com/vision/v1.0";
-			var subscriptionKey = "cf6f42df8d3e4cc3b7ff65a10e1bb15d";
-
-			var visionServiceClient = new VisionServiceClient(subscriptionKey, endPoint);
+			var visionServiceClient = new VisionServiceClient(
+				ConfigurationManager.AppSettings.Get("VisionApiKey"), 
+				ConfigurationManager.AppSettings.Get("VisionApiEndpoint"));
 			return visionServiceClient;
 		}
 
 		private void PresentVisionResult(AnalysisResult result, string imageUri)
 		{
-			var attributes = new List<string> { result.Description.Captions.First().Text };
+			var attributes = new List<string> {result.Description.Captions.First().Text};
 
 			var resultWindow = new ResultWindow
 			{
 				InputImage = new BitmapImage(new Uri(imageUri)),
-				Attributes = attributes
+				Attributes = attributes,
+				Owner = this
 			};
 			resultWindow.ShowDialog();
 			resultWindow.InputImage = null;
@@ -169,6 +206,7 @@ namespace VisionTest
 			{
 				return;
 			}
+
 			var filePath = openFileDialog.FileName;
 
 			GetFaceResultForImage(filePath);
@@ -178,10 +216,9 @@ namespace VisionTest
 		{
 			var fileStream = File.OpenRead(filePath);
 
-			var endPoint = "https://westeurope.api.cognitive.microsoft.com/face/v1.0";
-			var subscriptionKey = "c0b87cbb9685463d8311928015e2b29f";
-
-			var faceServiceClient = new FaceServiceClient(subscriptionKey, endPoint);
+			var faceServiceClient = new FaceServiceClient(
+				ConfigurationManager.AppSettings.Get("FaceApiKey"), 
+				ConfigurationManager.AppSettings.Get("FaceApiEndpoint"));
 
 			var result = await faceServiceClient.DetectAsync(
 				fileStream,
@@ -220,7 +257,8 @@ namespace VisionTest
 			var resultWindow = new ResultWindow
 			{
 				InputImage = new BitmapImage(new Uri(filePath)),
-				Attributes = attributes
+				Attributes = attributes,
+				Owner = this
 			};
 			resultWindow.ShowDialog();
 
@@ -241,6 +279,7 @@ namespace VisionTest
 			{
 				return;
 			}
+
 			var filePath = openFileDialog.FileName;
 
 			GetEmotionResultForImage(filePath);
@@ -250,10 +289,9 @@ namespace VisionTest
 		{
 			var fileStream = File.OpenRead(filePath);
 
-			var endPoint = "https://westus.api.cognitive.microsoft.com/emotion/v1.0";
-			var subscriptionKey = "001a99ad90424d27a3dc9a44ba88feea";
-
-			var emotionServiceClient = new EmotionServiceClient(subscriptionKey, endPoint);
+			var emotionServiceClient = new EmotionServiceClient(
+				ConfigurationManager.AppSettings.Get("EmotionApiKey"), 
+				ConfigurationManager.AppSettings.Get("EmotionApiEndpoint"));
 
 			var result = await emotionServiceClient.RecognizeAsync(fileStream);
 
@@ -273,7 +311,8 @@ namespace VisionTest
 			var resultWindow = new ResultWindow
 			{
 				InputImage = new BitmapImage(new Uri(filePath)),
-				Attributes = emotions
+				Attributes = emotions,
+				Owner = this
 			};
 			resultWindow.ShowDialog();
 
@@ -282,11 +321,20 @@ namespace VisionTest
 
 		private string TakeSnapshot()
 		{
-			var fileName = DateTime.Now.ToString("yyyy-MM-dd hh.mm.ss");
+			var filePath = Path.Combine(
+				FilePath,
+				DateTime.Now.ToString("yyyy-MM-dd hh.mm.ss") + ".png");
+			
+			var image = WebCameraImage.Source;
+			var encoder = new PngBitmapEncoder();
+			encoder.Frames.Add(BitmapFrame.Create((BitmapSource)image));
+			
+			using (var stream = new FileStream(filePath, FileMode.Create))
+			{
+				encoder.Save(stream);
+			}
 
-			WebcamViewer.TakeSnapshot(fileName);
-
-			return Path.Combine(FilePath, fileName + ".Jpeg");
+			return filePath;
 		}
 
 		public event PropertyChangedEventHandler PropertyChanged;
@@ -295,6 +343,11 @@ namespace VisionTest
 		protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
 		{
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+		}
+
+		private void MainWindow_OnClosing(object sender, CancelEventArgs e)
+		{
+			SpeechRecognitionViewModel.Dispose();
 		}
 	}
 }
